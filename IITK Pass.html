@@ -1,0 +1,129 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IITK Pass</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#14171c;--mu:#5d6673;--bd:#dde1e6;--ac:#7a1f2b;--ok:#17703a;--okb:#e1f3e7;--no:#b3261e;--nob:#fbe6e4;--wa:#7a5200;--wab:#fcefd0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101215;--card:#1a1d22;--tx:#eceef1;--mu:#9aa3af;--bd:#2c3139;--ac:#e08a96;--ok:#6fd08f;--okb:#12301d;--no:#ff8f86;--nob:#3a1816;--wa:#f2c46b;--wab:#33280e}}
+:root[data-theme="dark"]{--bg:#101215;--card:#1a1d22;--tx:#eceef1;--mu:#9aa3af;--bd:#2c3139;--ac:#e08a96;--ok:#6fd08f;--okb:#12301d;--no:#ff8f86;--nob:#3a1816;--wa:#f2c46b;--wab:#33280e}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#w{max-width:560px;margin:0 auto;padding:10px 14px 40px}
+h1{font-size:20px;margin:6px 0;color:var(--ac)}h2{font-size:15px;margin:16px 0 6px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:8px 0}
+.mu{color:var(--mu);font-size:13px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;margin:4px 0}
+button{padding:9px 14px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff}button.ok{background:var(--ok);color:#fff;border-color:var(--ok)}button.no{background:var(--no);color:#fff;border-color:var(--no)}
+button.on{border-color:var(--ac);color:var(--ac);font-weight:600}
+.tabs{display:flex;gap:6px;margin:8px 0}.tabs button{flex:1}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;padding:6px 8px;border:1px dashed var(--bd);border-radius:8px;margin-bottom:8px}.bar button{padding:4px 8px;font-size:12px}
+.res{border-radius:12px;padding:16px;text-align:center;margin:10px 0}.res.g{background:var(--okb);color:var(--ok)}.res.r{background:var(--nob);color:var(--no)}.res b{font-size:24px;display:block}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--wab);color:var(--wa)}.tag.g{background:var(--okb);color:var(--ok)}.tag.r{background:var(--nob);color:var(--no)}
+.qr{display:flex;justify-content:center;padding:10px;background:#fff;border-radius:10px;margin:8px auto;width:fit-content}
+.idc{text-align:center}.idc .n{font-size:18px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12px}td{padding:4px 2px;border-bottom:1px solid var(--bd);vertical-align:top}
+</style></head><body><div id="w"><div id="app"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+//CORE_START
+const SECRET='iitk-demo',OTP='123456',VALID={rider:30,courier:60,guest:240};
+const hash=s=>{let x=5381;for(const c of s+SECRET)x=(x*33^c.charCodeAt(0))>>>0;return x.toString(36)};
+const fmt=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+const USERS=[
+{id:'230001',name:'Aarav Singh',role:'student',hall:'Hall A',mobile:'9000000001',email:'aarav@iitk.ac.in'},
+{id:'230002',name:'Diya Sharma',role:'student',hall:'Hall B',mobile:'9000000002',email:'diya@iitk.ac.in'},
+{id:'PF1023',name:'Prof. Rao',role:'staff',mobile:'9000000003',email:'rao@iitk.ac.in'},
+{id:'G01',name:'Ramesh (Guard)',role:'guard',mobile:'9000000004',email:'g01@iitk.ac.in'},
+{id:'GU01',name:'Meera Verma',role:'guest',mobile:'9000000005',email:'meera@example.com'}];
+const newState=()=>({reqs:[],passes:[],log:[],n:1});
+const findUser=q=>{q=(q||'').trim().toLowerCase();return q?USERS.find(u=>[u.id,u.email,u.mobile].some(v=>v.toLowerCase()===q)):undefined};
+function login(role,q,otp){const u=findUser(q);if(!u)return{ok:false,msg:'No account found for that ID'};if(u.role!==role)return{ok:false,msg:'This account is not registered as '+role};if(otp!==OTP)return{ok:false,msg:'Wrong OTP'};return{ok:true,user:u}}
+const win=t=>Math.floor(t/30000);
+const idToken=(u,t)=>{const w=win(t);return 'U.'+u.id+'.'+w+'.'+hash(u.id+w)};
+const passToken=p=>'P.'+p.id+'.'+hash(p.id);
+function mkPass(S,r,start){const p={id:'P'+S.n++,hostId:r.hostId,name:r.name,type:r.type,place:r.place,start,expires:start+VALID[r.type]*60000,status:'issued'};S.passes.push(p);return p}
+function request(S,{hostId,name,type,place},t){const r={id:'R'+S.n++,hostId,name,type,place,status:'pending',t};S.reqs.push(r);return r}
+function decide(S,id,ok,t){const r=S.reqs.find(x=>x.id===id);if(!r||r.status!=='pending')return null;r.status=ok?'approved':'rejected';return ok?mkPass(S,r,t):null}
+function invite(S,{hostId,name,type,place,inMin},t){const r={id:'R'+S.n++,hostId,name,type,place,status:'approved',t};S.reqs.push(r);return mkPass(S,r,t+inMin*60000)}
+function scan(S,tok,{gate,dir,t}){
+const out=(ok,msg,who)=>{who=who||'Unknown';S.log.push({t,who,gate,dir,ok,msg});return{ok,msg,who}};
+const p=String(tok||'').trim().split('.');
+if(p[0]==='U'&&p.length===4){
+const u=USERS.find(x=>x.id===p[1]);
+if(!u||hash(p[1]+p[2])!==p[3])return out(false,'Invalid QR');
+const d=win(t)-Number(p[2]);
+if(!(d>=0&&d<=1))return out(false,'QR expired (screenshot or old code)',u.name);
+if(gate!=='Main Gate'&&u.hall!==gate)return out(false,'Not a resident of '+gate+'. Needs a resident approval',u.name);
+return out(true,u.role+(u.hall?' | '+u.hall:'')+' verified',u.name)}
+if(p[0]==='P'&&p.length===3){
+const q=S.passes.find(x=>x.id===p[1]);
+if(!q||hash(p[1])!==p[2])return out(false,'Invalid pass');
+const w=q.name+' ('+q.type+')';
+if(q.place!==gate)return out(false,'Pass is for '+q.place+', not '+gate,w);
+if(dir==='in'){
+if(q.status==='inside')return out(false,'Already inside',w);
+if(q.status==='closed')return out(false,'Pass already used',w);
+if(t<q.start)return out(false,'Pass not valid yet',w);
+if(t>q.expires)return out(false,'Pass expired',w);
+q.status='inside';return out(true,'Approved by host. Valid till '+fmt(q.expires),w)}
+if(q.status==='issued')return out(false,'This pass never entered',w);
+if(q.status==='closed')return out(false,'Pass already used',w);
+q.status='closed';return out(true,t>q.expires?'Exit recorded. Overstayed, flagged':'Exit recorded. Pass closed',w)}
+return out(false,'Unreadable QR')}
+const overstays=(S,t)=>S.passes.filter(x=>x.status==='inside'&&t>x.expires);
+//CORE_END
+
+if(typeof document!=='undefined'){
+let S=newState(),off=0,U=null,tab='id',gate='Main Gate',dir='in',res=null,role='student',err='',lastW=0;
+try{const j=localStorage.getItem('iitkpass');if(j){const o=JSON.parse(j);if(o&&o.S){S=o.S;off=o.off||0}}}catch(e){}
+const save=()=>{try{localStorage.setItem('iitkpass',JSON.stringify({S,off}))}catch(e){}};
+const now=()=>Date.now()+off,$=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uname=id=>(USERS.find(u=>u.id===id)||{name:id}).name;
+const qr=(el,text,s)=>{el.innerHTML='';try{new QRCode(el,{text,width:s,height:s})}catch(e){el.textContent=text}};
+const ACC=[['student','230001','Student (Hall A)'],['student','230002','Student (Hall B)'],['staff','PF1023','Staff'],['guest','9000000005','Guest'],['guard','G01','Guard']];
+const ROLES=['student','staff','guest','guard'];
+window.setRole=r=>{role=r;err='';render()};
+window.fill=(r,i)=>{role=r;render();$('#q').value=i;$('#o').value=OTP};
+window.doLogin=()=>{const r=login(role,$('#q').value,$('#o').value);if(r.ok){U=r.user;tab=U.role==='guard'?'g':'id';err='';res=null}else err=r.msg;render()};
+window.logout=()=>{U=null;res=null;render()};
+window.setTab=t=>{tab=t;render()};
+window.ff=()=>{off+=30*60000;save();render()};
+window.resetAll=()=>{S=newState();off=0;res=null;save();render()};
+window.decideReq=(id,ok)=>{decide(S,id,ok,now());save();render()};
+window.sendInvite=()=>{const n=$('#n').value.trim();if(!n)return;invite(S,{hostId:U.id,name:n,type:$('#t').value,place:$('#pl').value,inMin:Number($('#m').value)||0},now());save();tab='req';render()};
+window.setGate=g=>{gate=g;res=null;render()};window.setDir=d=>{dir=d;res=null;render()};
+window.arrive=()=>{const n=$('#an').value.trim(),h=findUser($('#ah').value);if(!n||!h||h.role==='guard'){res={ok:false,msg:'Enter visitor name and a valid host ID, email or mobile',who:'Request not sent'};render();return}
+request(S,{hostId:h.id,name:n,type:$('#at').value,place:gate},now());save();res={ok:true,msg:'Request sent to '+h.name+'. Waiting for approval',who:n};render()};
+const resolve=v=>{const[k,id]=[v.slice(0,v.indexOf(':')),v.slice(v.indexOf(':')+1)];const u=USERS.find(x=>x.id===id);
+if(k==='U')return idToken(u,now());if(k==='OLD')return idToken(u,now()-120000);if(k==='BAD')return 'U.'+u.id+'.'+win(now())+'.zzzz';
+const p=S.passes.find(x=>x.id===id);return p?passToken(p):''};
+window.doScan=()=>{const m=$('#man').value.trim();res=scan(S,m||resolve($('#src').value),{gate,dir,t:now()});save();render()};
+const tabs=(a)=>'<div class="tabs">'+a.map(([k,l])=>'<button class="'+(tab===k?'on':'')+'" onclick="setTab(\''+k+'\')">'+l+'</button>').join('')+'</div>';
+function passCard(p){const st=p.status==='inside'&&now()>p.expires?'overstayed':p.status;
+return '<div class="card"><div class="row"><b>'+esc(p.name)+'</b><span class="tag">'+p.type+'</span><span class="tag '+(st==='inside'?'g':st==='overstayed'?'r':'')+'">'+st+'</span></div><div class="mu">'+esc(p.place)+' | '+fmt(p.start)+' to '+fmt(p.expires)+'</div><div class="qr" data-p="'+p.id+'"></div></div>'}
+function view(){
+const t=now();
+if(!U)return '<h1>IITK Pass</h1><p class="mu">One digital ID for every gate at IIT Kanpur. Prototype with dummy data.</p><div class="card"><div class="row">'+ROLES.map(r=>'<button class="'+(role===r?'on':'')+'" onclick="setRole(\''+r+'\')">'+r+'</button>').join('')+'</div><input id="q" placeholder="Roll no., PF number, IITK email or mobile" autocomplete="off"><input id="o" placeholder="OTP (demo: 123456)" inputmode="numeric"><button class="p" style="width:100%" onclick="doLogin()">Log in as '+role+'</button>'+(err?'<p style="color:var(--no)">'+esc(err)+'</p>':'')+'</div><p class="mu">Demo accounts (tap to fill)</p><div class="row">'+ACC.map(a=>'<button onclick="fill(\''+a[0]+'\',\''+a[1]+'\')">'+a[2]+'</button>').join('')+'</div>';
+let h='<div class="row" style="justify-content:space-between"><h1>IITK Pass</h1><span class="mu">'+esc(U.name)+' <button onclick="logout()">Log out</button></span></div>';
+if(U.role==='guard'){
+const opts=USERS.filter(u=>u.role!=='guard').map(u=>'<option value="U:'+u.id+'">Live QR: '+esc(u.name)+' ('+u.role+')</option>').join('')+'<option value="OLD:230001">Old screenshot of Aarav QR (2 min old)</option><option value="BAD:230001">Tampered QR</option>'+S.passes.map(p=>'<option value="P:'+p.id+'">Pass: '+esc(p.name)+' ['+p.status+']</option>').join('');
+const ins=S.passes.filter(p=>p.status==='inside');
+h+='<div class="card"><div class="row">'+['Main Gate','Hall A','Hall B'].map(g=>'<button class="'+(gate===g?'on':'')+'" onclick="setGate(\''+g+'\')">'+g+'</button>').join('')+'</div><div class="row" style="margin-top:6px"><button class="'+(dir==='in'?'on':'')+'" onclick="setDir(\'in\')">Entry</button><button class="'+(dir==='out'?'on':'')+'" onclick="setDir(\'out\')">Exit</button></div></div>'
++'<h2>Scan</h2><div class="card"><select id="src">'+opts+'</select><input id="man" placeholder="or paste QR code text"><button class="p" style="width:100%" onclick="doScan()">Scan at '+gate+' ('+dir+')</button></div>'
++(res?'<div class="res '+(res.ok?'g':'r')+'"><b>'+(res.ok?'GREEN: ALLOW':'RED: DO NOT ALLOW')+'</b>'+esc(res.who)+'<br>'+esc(res.msg)+'</div>':'')
++'<h2>New visitor or delivery arrival</h2><div class="card"><input id="an" placeholder="Visitor name"><select id="at"><option value="rider">Rider (30 min)</option><option value="courier">Courier (60 min)</option><option value="guest">Guest (4 hrs)</option></select><input id="ah" placeholder="Host roll no., email or mobile"><button onclick="arrive()">Send request to host</button></div>'
++'<h2>Inside now</h2>'+(ins.length?ins.map(p=>'<div class="card row"><b>'+esc(p.name)+'</b><span class="mu">'+p.place+' | till '+fmt(p.expires)+'</span>'+(t>p.expires?'<span class="tag r">overstayed</span>':'')+'</div>').join(''):'<p class="mu">Nobody on a temporary pass.</p>')
++'<h2>Recent log</h2><div class="card"><table>'+(S.log.slice(-8).reverse().map(l=>'<tr><td>'+fmt(l.t)+'</td><td>'+esc(l.who)+'</td><td>'+l.gate+' '+l.dir+'</td><td><span class="tag '+(l.ok?'g':'r')+'">'+(l.ok?'ok':'denied')+'</span></td></tr>').join('')||'<tr><td class="mu">No scans yet</td></tr>')+'</table></div>';
+return h}
+const pend=S.reqs.filter(r=>r.hostId===U.id&&r.status==='pending'),mine=S.passes.filter(p=>p.hostId===U.id);
+h+=tabs([['id','My ID'],['req','Requests'+(pend.length?' ('+pend.length+')':'')],['inv','Invite']]);
+if(tab==='id')h+='<div class="card idc"><div class="n">'+esc(U.name)+'</div><div class="mu">'+U.role+' | '+U.id+(U.hall?' | '+U.hall:'')+'</div><div class="qr" id="idq"></div><div class="mu">Refreshes in <b id="cd">30</b>s. Screenshots stop working.</div></div>';
+if(tab==='req')h+='<h2>Waiting for your approval</h2>'+(pend.length?pend.map(r=>'<div class="card"><b>'+esc(r.name)+'</b> <span class="tag">'+r.type+'</span><div class="mu">At '+esc(r.place)+', asked at '+fmt(r.t)+'</div><div class="row" style="margin-top:6px"><button class="ok" onclick="decideReq(\''+r.id+'\',true)">Accept</button><button class="no" onclick="decideReq(\''+r.id+'\',false)">Reject</button></div></div>').join(''):'<p class="mu">No pending requests.</p>')+'<h2>Your visitor passes</h2>'+(mine.length?mine.map(passCard).join(''):'<p class="mu">No passes yet.</p>');
+if(tab==='inv')h+='<h2>Pre-approve a visitor</h2><div class="card"><input id="n" placeholder="Visitor name"><select id="t"><option value="guest">Guest (4 hrs)</option><option value="courier">Courier (60 min)</option><option value="rider">Rider (30 min)</option></select><select id="pl"><option>Main Gate</option>'+(U.hall?'<option>'+U.hall+'</option>':'')+'</select><input id="m" type="number" value="0" placeholder="Starts in how many minutes"><button class="p" style="width:100%" onclick="sendInvite()">Create pass</button><p class="mu">Useful when you are in class or lab and cannot answer a call.</p></div>';
+return h}
+function render(){const keep=document.activeElement&&document.activeElement.id;$('#app').innerHTML='<div class="bar">Demo clock '+fmt(now())+' <button onclick="ff()">+30 min</button><button onclick="resetAll()">Reset data</button></div>'+view();
+document.querySelectorAll('[data-p]').forEach(e=>{const p=S.passes.find(x=>x.id===e.dataset.p);if(p)qr(e,passToken(p),120)});lastW=0;tick()}
+function tick(){if(!U||tab!=='id'||U.role==='guard')return;const t=now(),w=win(t),el=$('#idq');if(!el)return;if(w!==lastW){lastW=w;qr(el,idToken(U,t),170)}const c=$('#cd');if(c)c.textContent=30-Math.floor((t%30000)/1000)}
+setInterval(tick,1000);render();
+}
+</script></body></html>
